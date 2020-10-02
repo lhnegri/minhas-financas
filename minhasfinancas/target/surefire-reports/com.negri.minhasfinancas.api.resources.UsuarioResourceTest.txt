@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.negri.minhasfinancas.api.resources.UsuarioResourceTest
--------------------------------------------------------------------------------
-Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.61 s - in com.negri.minhasfinancas.api.resources.UsuarioResourceTest
