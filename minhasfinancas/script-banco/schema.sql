@@ -29,3 +29,17 @@ CREATE TABLE financas.lancamento
   id_usuario bigint REFERENCES financas.usuario (id) not null,
   data_cadastro date default now()
 );
+
+CREATE TABLE financas.projeto
+(
+  id bigserial NOT NULL PRIMARY KEY ,
+  nome_cliente character varying(255) NOT NULL,
+  descricao_cliente varying(255) NOT NULL,
+  data_servico date NOT NULL,
+  valor_servico numeric(16,2) NOT NULL,
+  data_inicio_pagamento date,
+  numero_parcelas_pagamento integer,
+  data_inicio_recebimento date,
+  numero_parcelas_pagamento integer,
+  data_cadastro date default now()
+);
