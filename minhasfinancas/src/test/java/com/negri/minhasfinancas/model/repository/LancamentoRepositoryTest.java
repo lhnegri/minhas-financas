@@ -96,9 +96,4 @@ public class LancamentoRepositoryTest {
 									.dataCadastro(LocalDate.now())
 									.build();
 	}
-	
-	
-	
-	
-	
 }

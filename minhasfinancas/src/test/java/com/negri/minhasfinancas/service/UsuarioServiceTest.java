@@ -15,95 +15,122 @@ import org.mockito.Mockito;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.Optional;
 
-@SpringBootTest
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 public class UsuarioServiceTest {
 
-    UsuarioService service;
+    @SpyBean
+    UsuarioServiceImpl service;
 
     @MockBean
     UsuarioRepository repository;
 
-    @BeforeEach
-    public void setUp() {
-        service = new UsuarioServiceImpl(repository);
-    }
-
     @Test
-    public void deveValidarEmail() {
-        //Cenario
-        Mockito.when(repository.existsByEmail(Mockito.anyString())).thenReturn(false);
+    public void deveSalvarUmUsuario() {
+        //cenário
+        Mockito.doNothing().when(service).validarEmail(Mockito.anyString());
+        Usuario usuario = Usuario.builder()
+                .id(1l)
+                .nome("nome")
+                .email("email@email.com")
+                .senha("senha").build();
+
+        Mockito.when(repository.save(Mockito.any(Usuario.class))).thenReturn(usuario);
 
         //acao
-        service.validarEmail("email@gmail.com");
+        Usuario usuarioSalvo = service.salvarUsuario(new Usuario());
+
+        //verificao
+        org.assertj.core.api.Assertions.assertThat(usuarioSalvo).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(usuarioSalvo.getId()).isEqualTo(1l);
+        org.assertj.core.api.Assertions.assertThat(usuarioSalvo.getNome()).isEqualTo("nome");
+        org.assertj.core.api.Assertions.assertThat(usuarioSalvo.getEmail()).isEqualTo("email@email.com");
+        org.assertj.core.api.Assertions.assertThat(usuarioSalvo.getSenha()).isEqualTo("senha");
+
+    }
+
+    @Test
+    public void naoDeveSalvarUmUsuarioComEmailJaCadastrado() {
+        //cenario
+        String email = "email@email.com";
+        Usuario usuario = Usuario.builder().email(email).build();
+        Mockito.doThrow(RegraNegocioException.class).when(service).validarEmail(email);
+
+        //acao
+        org.junit.jupiter.api.Assertions
+                .assertThrows(RegraNegocioException.class, () -> service.salvarUsuario(usuario) ) ;
 
         //verificacao
-
-    }
-
-    @Test
-    public void deveLancarExcessaoAoValidarEmailQuandoExistirEmailCadastrado() {
-        //Cenario
-        Mockito.when(repository.existsByEmail(Mockito.anyString())).thenReturn(true);
-
-        //acao - verificacao
-        org.junit.jupiter.api.Assertions.assertThrows(RegraNegocioException.class, () -> service.validarEmail("usuario@email.com"));
-    }
-
-    @Test
-    public void deveLancarExcessaoQuandoNaoEncontrarUmUsuarioPorEmail() {
-        //Cenario
-        Mockito.when(repository.findByEmail(Mockito.anyString())).thenReturn(Optional.empty());
-
-        //acao - verificacao
-        Throwable exception = org.assertj.core.api.Assertions.catchThrowable(() -> service.autenticar("usuario@email.com", "senha"));
-        org.assertj.core.api.Assertions.assertThat(exception).isInstanceOf(ErroAutenticacaoException.class).hasMessage("Nenhum usuário encontrado para o Email informado.");
+        Mockito.verify( repository, Mockito.never() ).save(usuario);
     }
 
     @Test
     public void deveAutenticarUmUsuarioComSucesso() {
-        //Cenario
+        //cenário
         String email = "email@email.com";
         String senha = "senha";
 
-        Usuario usuario = Usuario
-                .builder()
-                .email(email)
-                .senha(senha)
-                .id(1L)
-                .build();
+        Usuario usuario = Usuario.builder().email(email).senha(senha).id(1l).build();
+        Mockito.when( repository.findByEmail(email) ).thenReturn(Optional.of(usuario));
 
-        Mockito.when(repository.findByEmail(email)).thenReturn(Optional.of(usuario));
+        //acao
+        Usuario result = service.autenticar(email, senha);
 
-        //Acao e Verificacao
-        org.assertj.core.api.Assertions.assertThat(service.autenticar(email, senha)).isNotNull();
+        //verificacao
+        org.assertj.core.api.Assertions.assertThat(result).isNotNull();
+
     }
 
     @Test
-    public void deveLancarExcessaoAoAutenticarPorFalhaDeSenhaNaoConfere() {
-        //Cenario
-        String email = "email@email.com";
+    public void deveLancarErroQUandoNaoEncontrarUsuarioCadastradoComOEmailInformado() {
+
+        //cenário
+        Mockito.when(repository.findByEmail(Mockito.anyString())).thenReturn(Optional.empty());
+
+        //acao
+        Throwable exception = org.assertj.core.api.Assertions.catchThrowable( () -> service.autenticar("email@email.com", "senha") );
+
+        //verificacao
+        org.assertj.core.api.Assertions.assertThat(exception)
+                .isInstanceOf(ErroAutenticacaoException.class)
+                .hasMessage("Usuário não encontrado para o email informado.");
+    }
+
+    @Test
+    public void deveLancarErroQuandoSenhaNaoBater() {
+        //cenario
         String senha = "senha";
-
-        Usuario usuario = Usuario
-                .builder()
-                .email(email)
-                .senha(senha)
-                .id(1L)
-                .build();
-
+        Usuario usuario = Usuario.builder().email("email@email.com").senha(senha).build();
         Mockito.when(repository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(usuario));
 
-        //Acao e verificacao
-        String senhaAux = "senha2";
-
-        Throwable exception = org.assertj.core.api.Assertions.catchThrowable(() -> service.autenticar(email, senhaAux));
+        //acao
+        Throwable exception = org.assertj.core.api.Assertions.catchThrowable( () ->  service.autenticar("email@email.com", "123") );
         org.assertj.core.api.Assertions.assertThat(exception).isInstanceOf(ErroAutenticacaoException.class).hasMessage("Senha inválida.");
+
+    }
+
+    @Test
+    public void deveValidarEmail() {
+        // cenario
+        Mockito.when(repository.existsByEmail(Mockito.anyString())).thenReturn(false);
+
+        //acao
+        service.validarEmail("email@email.com");
+    }
+
+    @Test
+    public void deveLancarErroAoValidarEmailQuandoExistirEmailCadastrado() {
+        //cenario
+        Mockito.when(repository.existsByEmail(Mockito.anyString())).thenReturn(true);
+
+        //acao
+        org.junit.jupiter.api.Assertions
+                .assertThrows(RegraNegocioException.class, () -> service.validarEmail("email@email.com"));
     }
 }

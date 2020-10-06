@@ -64,7 +64,7 @@ public class ProjetoServiceImpl implements ProjetoService {
             throw new RegraNegocioException("Informe o Nome do Cliente.");
         }
 
-        if(projeto.getDescricaoProjeto() == null) {
+        if(projeto.getDescricaoProjeto() == null || projeto.getDescricaoProjeto().trim().equals("")) {
             throw new RegraNegocioException("Informe a Descrição do Projeto.");
         }
 
@@ -72,8 +72,12 @@ public class ProjetoServiceImpl implements ProjetoService {
             throw new RegraNegocioException("Informe a Data do Serviço.");
         }
 
-        if(projeto.getValorServico() == null || projeto.getValorServico().compareTo(BigDecimal.ZERO) < 1 ) {
+        if(projeto.getValorServico() == null) {
             throw new RegraNegocioException("Informe o Valor do Serviço.");
+        }
+
+        if(projeto.getValorServico().compareTo(BigDecimal.ZERO) < 1 ) {
+            throw new RegraNegocioException("Informe um Valor de Serviço válido.");
         }
     }
 
