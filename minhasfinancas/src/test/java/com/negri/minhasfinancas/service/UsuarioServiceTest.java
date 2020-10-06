@@ -99,7 +99,7 @@ public class UsuarioServiceTest {
         //verificacao
         org.assertj.core.api.Assertions.assertThat(exception)
                 .isInstanceOf(ErroAutenticacaoException.class)
-                .hasMessage("Usuário não encontrado para o email informado.");
+                .hasMessage("Nenhum usuário encontrado para o Email informado.");
     }
 
     @Test
